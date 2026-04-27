@@ -1,12 +1,41 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/financas
-    username: postgres
-    password: 123
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: validate
+      ddl-auto: validate   # em produção: validate ou none
     show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  jackson:
+    serialization:
+      WRITE_DATES_AS_TIMESTAMPS: false
+
+server:
+  port: ${PORT:8080}
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql: WARN
+
+# ⚡ Opcional (mas recomendado)
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+# ⚠️ Se estiver usando JWT (opcional)
+jwt:
+  secret: ${JWT_SECRET:default-secret}
+  expiration: 86400000
