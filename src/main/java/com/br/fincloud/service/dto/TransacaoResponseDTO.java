@@ -16,5 +16,6 @@ public record TransacaoResponseDTO(
         String contaNome,
         Long categoriaId,
         String categoriaNome,
-        LocalDateTime dataCriacao
+        LocalDateTime dataCriacao,
+        Boolean pago
 ) {}

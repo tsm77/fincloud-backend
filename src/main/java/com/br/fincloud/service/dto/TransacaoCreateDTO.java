@@ -20,7 +20,7 @@ public record TransacaoCreateDTO(
 ) {
         public record ItemDTO(
                 @NotBlank String descricao,
-                @NotNull BigDecimal valor,
+                BigDecimal valor,
                 Integer numeroParcela,
                 Integer totalParcelas
         ) {}

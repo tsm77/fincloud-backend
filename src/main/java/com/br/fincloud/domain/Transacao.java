@@ -47,6 +47,17 @@ public class Transacao {
     @Column(nullable = false)
     private Integer totalParcelas = 1;
 
+    @Column(nullable = false)
+    private Boolean pago = false;
+
+    public Boolean getPago() {
+        return pago;
+    }
+
+    public void setPago(Boolean pago) {
+        this.pago = pago;
+    }
+
     @OneToMany(mappedBy = "transacao", cascade = CascadeType.ALL, orphanRemoval = true)
     private java.util.List<TransacaoItem> itens = new java.util.ArrayList<>();
 

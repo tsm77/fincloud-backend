@@ -10,6 +10,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -33,7 +35,8 @@ public class TransacaoService {
     }
 
     @Transactional
-    public TransacaoResponseDTO criar(TransacaoCreateDTO dto) {
+    public List<TransacaoResponseDTO> criar(TransacaoCreateDTO dto) {
+
         String email = emailLogado();
 
         Usuario usuario = usuarioRepository.findByEmail(email)
@@ -45,41 +48,62 @@ public class TransacaoService {
         Categoria categoria = categoriaRepository.findByIdAndUsuarioEmail(dto.categoriaId(), email)
                 .orElseThrow(() -> new NotFoundException("Categoria não encontrada"));
 
-        Transacao t = new Transacao();
-        t.setUsuario(usuario);
-        t.setConta(conta);
-        t.setCategoria(categoria);
-        t.setTipo(dto.tipo());
-        t.setData(dto.data());
-        t.setDescricao("Compra com itens"); // opcional
-
-        java.math.BigDecimal total = java.math.BigDecimal.ZERO;
+        List<Transacao> transacoesGeradas = new ArrayList<>();
 
         for (var itemDTO : dto.itens()) {
-            if (itemDTO.valor() == null || itemDTO.valor().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+
+            if (itemDTO.valor() == null || itemDTO.valor().compareTo(BigDecimal.ZERO) <= 0) {
                 throw new RuntimeException("Valor do item deve ser maior que zero");
             }
 
-            TransacaoItem item = new TransacaoItem();
-            item.setDescricao(itemDTO.descricao());
-            item.setValor(itemDTO.valor());
-            item.setNumeroParcela(itemDTO.numeroParcela() == null ? 1 : itemDTO.numeroParcela());
-            item.setTotalParcelas(itemDTO.totalParcelas() == null ? 1 : itemDTO.totalParcelas());
+            int totalParcelas = itemDTO.totalParcelas() == null ? 1 : itemDTO.totalParcelas();
 
-            t.addItem(item);
+            // 💰 VALOR TOTAL DO ITEM
+            BigDecimal valorTotal = itemDTO.valor();
 
-            total = total.add(item.getValor());
+            // 💰 VALOR DE CADA PARCELA
+            BigDecimal valorParcela = valorTotal.divide(
+                    BigDecimal.valueOf(totalParcelas),
+                    2,
+                    RoundingMode.HALF_UP
+            );
+
+            for (int parcela = 1; parcela <= totalParcelas; parcela++) {
+
+                Transacao t = new Transacao();
+                t.setUsuario(usuario);
+                t.setConta(conta);
+                t.setCategoria(categoria);
+                t.setTipo(dto.tipo());
+
+                // 📅 data ajustada por parcela
+                t.setData(dto.data().plusMonths(parcela - 1));
+
+                // 🧠 descrição com parcela
+                String descricao = itemDTO.descricao();
+
+                if (totalParcelas > 1) {
+                    descricao += " (" + parcela + "/" + totalParcelas + ")";
+                }
+
+                t.setDescricao(descricao);
+
+                // 💰 agora CORRETO → valor da parcela
+                t.setValor(valorParcela);
+
+                Transacao salva = transacaoRepository.save(t);
+                transacoesGeradas.add(salva);
+
+                // 💳 aplica efeito no saldo com valor da parcela
+                aplicarEfeitoSaldo(conta, dto.tipo(), valorParcela);
+            }
         }
 
-        // ✅ define valor total no cabeçalho (recomendado ter esse campo)
-        t.setValor(total);
-
-        Transacao salva = transacaoRepository.save(t);
-
-        aplicarEfeitoSaldo(conta, dto.tipo(), total);
         contaRepository.save(conta);
 
-        return toResponseDTO(salva);
+        return transacoesGeradas.stream()
+                .map(this::toResponseDTO)
+                .toList();
     }
 
     public List<TransacaoResponseDTO> listar() {
@@ -98,41 +122,30 @@ public class TransacaoService {
     }
 
     @Transactional
-    public TransacaoResponseDTO editar(Long id, TransacaoUpdateDTO dto) {
+    public List<TransacaoResponseDTO> editar(Long id, TransacaoUpdateDTO dto) {
+
         String email = emailLogado();
 
         Transacao atual = transacaoRepository.findByIdAndUsuarioEmail(id, email)
                 .orElseThrow(() -> new NotFoundException("Transação não encontrada"));
 
-        validarValor(dto.valor());
+        Conta conta = atual.getConta();
 
-        // 1) DESFAZ efeito antigo no saldo da conta antiga
-        Conta contaAntiga = atual.getConta();
-        desfazerEfeitoSaldo(contaAntiga, atual.getTipo(), atual.getValor());
-        contaRepository.save(contaAntiga);
+        // 🔥 1. DESFAZ saldo antigo
+        desfazerEfeitoSaldo(conta, atual.getTipo(), atual.getValor());
+        contaRepository.save(conta);
 
-        // 2) carrega nova conta/categoria (podem mudar)
-        Conta novaConta = contaRepository.findByIdAndUsuarioEmail(dto.contaId(), email)
-                .orElseThrow(() -> new NotFoundException("Conta não encontrada"));
+        // 🔥 2. REMOVE transação antiga
+        transacaoRepository.delete(atual);
 
-        Categoria novaCategoria = categoriaRepository.findByIdAndUsuarioEmail(dto.categoriaId(), email)
-                .orElseThrow(() -> new NotFoundException("Categoria não encontrada"));
-
-        // 3) atualiza transação
-        atual.setConta(novaConta);
-        atual.setCategoria(novaCategoria);
-        atual.setTipo(dto.tipo());
-        atual.setValor(dto.valor());
-        atual.setData(dto.data());
-        atual.setDescricao(dto.descricao());
-
-        Transacao atualizada = transacaoRepository.save(atual);
-
-        // 4) APLICA efeito novo na nova conta
-        aplicarEfeitoSaldo(novaConta, dto.tipo(), dto.valor());
-        contaRepository.save(novaConta);
-
-        return toResponseDTO(atualizada);
+        // 🔥 3. RECRIA usando mesma lógica do criar
+        return criar(new TransacaoCreateDTO(
+                dto.contaId(),
+                dto.categoriaId(),
+                dto.tipo(),
+                dto.data(),
+                dto.itens()
+        ));
     }
 
     @Transactional
@@ -177,6 +190,14 @@ public class TransacaoService {
         }
     }
 
+    @Transactional
+    public void atualizarPago(Long id, boolean pago) {
+        Transacao t = transacaoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Transação não encontrada"));
+
+        t.setPago(pago);
+    }
+
     private TransacaoResponseDTO toResponseDTO(Transacao t) {
         return new TransacaoResponseDTO(
                 t.getId(),
@@ -188,7 +209,8 @@ public class TransacaoService {
                 t.getConta().getNome(),
                 t.getCategoria().getId(),
                 t.getCategoria().getNome(),
-                t.getDataCriacao()
+                t.getDataCriacao(),
+                t.getPago() != null ? t.getPago() : false
         );
     }
 

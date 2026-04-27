@@ -23,7 +23,7 @@ public class TransacaoController {
     }
 
     @PostMapping
-    public ResponseEntity<TransacaoResponseDTO> criar(@RequestBody @Valid TransacaoCreateDTO dto) {
+    public ResponseEntity<List<TransacaoResponseDTO>> cria(@RequestBody @Valid TransacaoCreateDTO dto) {
         return ResponseEntity.ok(service.criar(dto));
     }
 
@@ -38,7 +38,7 @@ public class TransacaoController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TransacaoResponseDTO> editar(@PathVariable Long id,
+    public ResponseEntity<List<TransacaoResponseDTO>> editar(@PathVariable Long id,
                                                        @RequestBody @Valid TransacaoUpdateDTO dto) {
         return ResponseEntity.ok(service.editar(id, dto));
     }
@@ -47,5 +47,14 @@ public class TransacaoController {
     public ResponseEntity<Void> remover(@PathVariable Long id) {
         service.remover(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/pago")
+    public ResponseEntity<Void> atualizarPago(
+            @PathVariable Long id,
+            @RequestParam boolean pago
+    ) {
+        service.atualizarPago(id, pago);
+        return ResponseEntity.ok().build();
     }
 }
