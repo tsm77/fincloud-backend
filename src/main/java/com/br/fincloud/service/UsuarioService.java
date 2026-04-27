@@ -31,7 +31,7 @@ public class UsuarioService {
 
         Usuario usuario = new Usuario();
         usuario.setNome(dto.nome());
-        usuario.setEmail(dto.email());
+        usuario.setEmail(dto.email().trim().toLowerCase());
         usuario.setSenha(passwordEncoder.encode(dto.senha()));
 
         Usuario salvo = repository.save(usuario);
