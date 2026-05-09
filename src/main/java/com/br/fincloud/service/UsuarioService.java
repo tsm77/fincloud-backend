@@ -42,16 +42,36 @@ public class UsuarioService {
         return repository.findAll().stream().map(this::toResponseDTO).toList();
     }
 
+    public UsuarioResponseDTO buscarPorEmail(String email) {
+        Usuario usuario = repository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new NotFoundException("Usuario nao encontrado"));
+
+        return toResponseDTO(usuario);
+    }
+
+    public UsuarioResponseDTO editarPorEmail(String email, UsuarioUpdateDTO dto) {
+        Usuario usuario = repository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new NotFoundException("Usuario nao encontrado"));
+
+        return editar(usuario.getId(), dto);
+    }
+
     public UsuarioResponseDTO editar(Long id, UsuarioUpdateDTO dto) {
         Usuario usuario = repository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Usuário não encontrado"));
 
-        if (repository.existsByEmailAndIdNot(dto.email(), id)) {
+        String emailNormalizado = dto.email().trim().toLowerCase();
+
+        boolean emailEmUso = repository.findByEmailIgnoreCase(emailNormalizado)
+                .filter(u -> !u.getId().equals(id))
+                .isPresent();
+
+        if (emailEmUso) {
             throw new ConflictException("Email já cadastrado");
         }
 
         usuario.setNome(dto.nome());
-        usuario.setEmail(dto.email());
+        usuario.setEmail(emailNormalizado);
 
         if (dto.senha() != null && !dto.senha().isBlank()) {
             usuario.setSenha(passwordEncoder.encode(dto.senha()));

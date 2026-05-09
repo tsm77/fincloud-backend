@@ -9,6 +9,7 @@
     import io.swagger.v3.oas.annotations.tags.Tag;
     import jakarta.validation.Valid;
     import org.springframework.http.ResponseEntity;
+    import org.springframework.security.core.Authentication;
     import org.springframework.security.crypto.password.PasswordEncoder;
     import org.springframework.web.bind.annotation.*;
 
@@ -44,6 +45,11 @@
             return ResponseEntity.ok(service.listar());
         }
 
+        @GetMapping("/me")
+        public ResponseEntity<UsuarioResponseDTO> meuUsuario(Authentication authentication) {
+            return ResponseEntity.ok(service.buscarPorEmail(authentication.getName()));
+        }
+
         @Operation(summary = "Login", description = "Retorna um token JWT")
         @PostMapping("/login")
         public ResponseEntity<?> login(@RequestBody @Valid LoginRequestDTO loginDTO) {
@@ -68,6 +74,12 @@
         public ResponseEntity<UsuarioResponseDTO> editar(@PathVariable Long id,
                                                          @RequestBody @Valid UsuarioUpdateDTO dto) {
             return ResponseEntity.ok(service.editar(id, dto));
+        }
+
+        @PutMapping("/me")
+        public ResponseEntity<UsuarioResponseDTO> editarMeuUsuario(Authentication authentication,
+                                                                   @RequestBody @Valid UsuarioUpdateDTO dto) {
+            return ResponseEntity.ok(service.editarPorEmail(authentication.getName(), dto));
         }
 
         @DeleteMapping("/{id}")
