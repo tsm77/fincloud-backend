@@ -8,7 +8,7 @@ public record ContaResponseDTO(
         Long id,
         String nome,
         TipoConta tipo,
-        BigDecimal saldoInicial,
+        BigDecimal saldo,
         Boolean ativa,
         LocalDateTime dataCriacao
 ) {}

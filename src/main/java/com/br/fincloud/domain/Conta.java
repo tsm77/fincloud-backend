@@ -1,10 +1,8 @@
 package com.br.fincloud.domain;
 
 import jakarta.persistence.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "contas")
 public class Conta {
@@ -24,9 +22,6 @@ public class Conta {
     private TipoConta tipo;
 
     @Column(nullable = false)
-    private BigDecimal saldoInicial = BigDecimal.ZERO;
-
-    @Column(nullable = false)
     private Boolean ativa = true;
 
     private LocalDateTime dataCriacao;
@@ -38,8 +33,7 @@ public class Conta {
     @PrePersist
     public void prePersist() {
         this.dataCriacao = LocalDateTime.now();
-        if (this.saldoInicial == null) this.saldoInicial = BigDecimal.ZERO;
-        if (this.saldoAtual == null) this.saldoAtual = this.saldoInicial;
+        if (this.saldoAtual == null) this.saldoAtual = BigDecimal.ZERO;
         if (this.ativa == null) this.ativa = true;
     }
 
@@ -81,14 +75,6 @@ public class Conta {
 
     public void setTipo(TipoConta tipo) {
         this.tipo = tipo;
-    }
-
-    public BigDecimal getSaldoInicial() {
-        return saldoInicial;
-    }
-
-    public void setSaldoInicial(BigDecimal saldoInicial) {
-        this.saldoInicial = saldoInicial;
     }
 
     public Boolean getAtiva() {

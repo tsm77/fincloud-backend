@@ -167,27 +167,23 @@ public class TransacaoService {
     // -------- regras de saldo --------
 
     private void aplicarEfeitoSaldo(Conta conta, TipoTransacao tipo, BigDecimal valor) {
-        if (conta.getSaldoInicial() == null) conta.setSaldoInicial(BigDecimal.ZERO);
+        BigDecimal saldoAtual = conta.getSaldoAtual() != null ? conta.getSaldoAtual() : BigDecimal.ZERO;
 
         if (tipo == TipoTransacao.RECEITA) {
-            conta.setSaldoInicial(conta.getSaldoInicial().add(valor));
+            conta.setSaldoAtual(saldoAtual.add(valor));
         } else {
-            conta.setSaldoInicial(conta.getSaldoInicial().subtract(valor));
+            conta.setSaldoAtual(saldoAtual.subtract(valor));
         }
     }
 
     private void desfazerEfeitoSaldo(Conta conta, TipoTransacao tipo, BigDecimal valor) {
         // desfazer é o inverso
-        if (tipo == TipoTransacao.RECEITA) {
-            conta.setSaldoInicial(conta.getSaldoInicial().subtract(valor));
-        } else {
-            conta.setSaldoInicial(conta.getSaldoInicial().add(valor));
-        }
-    }
+        BigDecimal saldoAtual = conta.getSaldoAtual() != null ? conta.getSaldoAtual() : BigDecimal.ZERO;
 
-    private void validarValor(BigDecimal valor) {
-        if (valor == null || valor.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuntimeException("valor deve ser maior que zero");
+        if (tipo == TipoTransacao.RECEITA) {
+            conta.setSaldoAtual(saldoAtual.subtract(valor));
+        } else {
+            conta.setSaldoAtual(saldoAtual.add(valor));
         }
     }
 

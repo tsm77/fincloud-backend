@@ -13,7 +13,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -34,9 +33,6 @@ public class ContaService {
         conta.setUsuario(usuario);
         conta.setNome(dto.nome());
         conta.setTipo(dto.tipo());
-
-        BigDecimal saldo = dto.saldoInicial() != null ? dto.saldoInicial() : BigDecimal.ZERO;
-        conta.setSaldoInicial(saldo);
 
         Conta salva = contaRepository.save(conta);
         return toResponseDTO(salva);
@@ -65,10 +61,6 @@ public class ContaService {
         conta.setNome(dto.nome());
         conta.setTipo(dto.tipo());
 
-        if (dto.saldoInicial() != null) {
-            conta.setSaldoInicial(dto.saldoInicial());
-        }
-
         if (dto.ativa() != null) {
             conta.setAtiva(dto.ativa());
         }
@@ -89,7 +81,7 @@ public class ContaService {
                 c.getId(),
                 c.getNome(),
                 c.getTipo(),
-                c.getSaldoInicial(),
+                c.getSaldoAtual(),
                 c.getAtiva(),
                 c.getDataCriacao()
         );
