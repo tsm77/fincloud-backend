@@ -17,5 +17,7 @@ public record TransacaoResponseDTO(
         Long categoriaId,
         String categoriaNome,
         LocalDateTime dataCriacao,
-        Boolean pago
+        Boolean pago,
+        Integer numeroParcela,
+        Integer totalParcelas
 ) {}

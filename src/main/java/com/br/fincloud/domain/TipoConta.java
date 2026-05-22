@@ -6,5 +6,6 @@ public enum TipoConta {
     CARTEIRA,
     CARTAO_CREDITO,
     INVESTIMENTO,
+    SALARIO,
     CAIXA
 }

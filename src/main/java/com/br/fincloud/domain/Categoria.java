@@ -19,7 +19,7 @@ public class Categoria {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TipoTransacao tipo; // RECEITA ou DESPESA
+    private TipoTransacao tipo;
 
     private String cor;
 
