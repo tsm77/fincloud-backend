@@ -29,6 +29,7 @@ public class ContaSaldoMigration {
     @EventListener(ApplicationReadyEvent.class)
     public void migrarSchemaContas() {
         atualizarCheckTipoConta();
+        atualizarChecksTipoTransacao();
         removerSaldoInicialLegado();
     }
 
@@ -51,6 +52,29 @@ public class ContaSaldoMigration {
             log.info("Constraint contas_tipo_check atualizado com os tipos de conta atuais");
         } catch (DataAccessException ex) {
             log.warn("Nao foi possivel atualizar constraint contas_tipo_check", ex);
+        }
+    }
+
+    private void atualizarChecksTipoTransacao() {
+        atualizarCheckTipoTransacao("categorias", "categorias_tipo_check");
+        atualizarCheckTipoTransacao("transacoes", "transacoes_tipo_check");
+    }
+
+    private void atualizarCheckTipoTransacao(String tabela, String constraint) {
+        try {
+            jdbcTemplate.execute("alter table " + tabela + " drop constraint if exists " + constraint);
+            jdbcTemplate.execute("""
+                    alter table %s
+                    add constraint %s
+                    check (tipo in (
+                        'RECEITA',
+                        'DESPESA',
+                        'SALARIO'
+                    ))
+                    """.formatted(tabela, constraint));
+            log.info("Constraint {} atualizado com os tipos de transacao atuais", constraint);
+        } catch (DataAccessException ex) {
+            log.warn("Nao foi possivel atualizar constraint {}", constraint, ex);
         }
     }
 
